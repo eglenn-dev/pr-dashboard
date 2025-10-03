@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "NOMP PR_DASHBOARD",
+    title: "NOMP_PR_DASHBOARD",
     description: "Created by Ethan Glenn",
 };
 
