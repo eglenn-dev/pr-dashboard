@@ -1,7 +1,14 @@
-import { getAssignedPRCounts } from "./actions";
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ExternalLink, HelpCircle } from "lucide-react";
+import {
+    ExternalLink,
+    HelpCircle,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
@@ -17,9 +24,80 @@ import {
     TooltipTrigger,
     TooltipContent,
 } from "@/components/ui/tooltip";
+import { useState, useMemo } from "react";
 
-export default async function Home() {
-    const assignedPRCounts = await getAssignedPRCounts();
+type SortField = "assigned" | "approved" | null;
+type SortDirection = "asc" | "desc";
+
+interface UserData {
+    login: string;
+    assignedCount: number;
+    approvedCount: number;
+}
+
+interface HomeProps {
+    assignedPRCounts: UserData[];
+}
+
+export default function Home({ assignedPRCounts }: HomeProps) {
+    const [sortField, setSortField] = useState<SortField>(null);
+    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            if (sortDirection === "desc") {
+                // First click: desc -> asc
+                setSortDirection("asc");
+            } else {
+                // Second click: asc -> remove filter
+                setSortField(null);
+                setSortDirection("desc");
+            }
+        } else {
+            // Set new field with default desc direction
+            setSortField(field);
+            setSortDirection("desc");
+        }
+    };
+
+    const sortedData = useMemo(() => {
+        if (!sortField) return assignedPRCounts;
+
+        return [...assignedPRCounts].sort((a, b) => {
+            let aValue = 0;
+            let bValue = 0;
+
+            if (sortField === "assigned") {
+                aValue = a.assignedCount;
+                bValue = b.assignedCount;
+            } else if (sortField === "approved") {
+                aValue = a.approvedCount;
+                bValue = b.approvedCount;
+            }
+
+            if (sortDirection === "asc") {
+                return aValue - bValue;
+            } else {
+                return bValue - aValue;
+            }
+        });
+    }, [assignedPRCounts, sortField, sortDirection]);
+
+    const getSortIcon = (field: SortField) => {
+        if (sortField !== field) {
+            return (
+                <ArrowUpDown
+                    className="inline-block ml-1 opacity-30"
+                    size={16}
+                />
+            );
+        }
+        return sortDirection === "asc" ? (
+            <ArrowUp className="inline-block ml-1" size={16} />
+        ) : (
+            <ArrowDown className="inline-block ml-1" size={16} />
+        );
+    };
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <div className="w-full max-w-3xl">
@@ -51,27 +129,37 @@ export default async function Home() {
                                 <TableHead className="font-mono text-xs uppercase tracking-wider">
                                     Username
                                 </TableHead>
-                                <TableHead className="text-right font-mono text-xs uppercase tracking-wider flex items-center justify-end">
-                                    Assigned
-                                    <Tooltip>
-                                        <TooltipTrigger className="inline-block ml-1">
-                                            <HelpCircle
-                                                className="inline-block opacity-50"
-                                                size={16}
-                                            />
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">
-                                            <p>
-                                                Number of open pull requests
-                                                assigned to this user for
-                                                review.
-                                            </p>
-                                        </TooltipContent>
-                                    </Tooltip>
+                                <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
+                                    <button
+                                        onClick={() => handleSort("assigned")}
+                                        className="flex items-center justify-end w-full hover:text-foreground transition-colors cursor-pointer"
+                                    >
+                                        Assigned
+                                        {getSortIcon("assigned")}
+                                        <Tooltip>
+                                            <TooltipTrigger className="inline-block ml-1">
+                                                <HelpCircle
+                                                    className="inline-block opacity-50"
+                                                    size={16}
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>
+                                                    Number of open pull requests
+                                                    assigned to this user for
+                                                    review.
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </button>
                                 </TableHead>
                                 <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
-                                    <div className="flex items-center justify-end">
+                                    <button
+                                        onClick={() => handleSort("approved")}
+                                        className="flex items-center justify-end w-full hover:text-foreground transition-colors cursor-pointer"
+                                    >
                                         Approved (7d)
+                                        {getSortIcon("approved")}
                                         <Tooltip>
                                             <TooltipTrigger className="inline-block ml-1">
                                                 <HelpCircle
@@ -87,15 +175,29 @@ export default async function Home() {
                                                 </p>
                                             </TooltipContent>
                                         </Tooltip>
-                                    </div>
+                                    </button>
                                 </TableHead>
                                 <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
                                     View
+                                    <Tooltip>
+                                        <TooltipTrigger className="inline-block ml-1">
+                                            <HelpCircle
+                                                className="inline-block opacity-50"
+                                                size={16}
+                                            />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p>
+                                                View pull requests currently
+                                                assigned to this user on GitHub.
+                                            </p>
+                                        </TooltipContent>
+                                    </Tooltip>
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {assignedPRCounts.map((user) => (
+                            {sortedData.map((user) => (
                                 <TableRow
                                     key={user.login}
                                     className="border-border hover:bg-muted/50 transition-colors"
@@ -195,27 +297,37 @@ export function HomeSkeleton() {
                                 <TableHead className="font-mono text-xs uppercase tracking-wider">
                                     Username
                                 </TableHead>
-                                <TableHead className="text-right font-mono text-xs uppercase tracking-wider flex items-center justify-end">
-                                    Assigned
-                                    <Tooltip>
-                                        <TooltipTrigger className="inline-block ml-1">
-                                            <HelpCircle
-                                                className="inline-block opacity-50"
-                                                size={16}
-                                            />
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">
-                                            <p>
-                                                Number of open pull requests
-                                                assigned to this user for
-                                                review.
-                                            </p>
-                                        </TooltipContent>
-                                    </Tooltip>
+                                <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
+                                    <div className="flex items-center justify-end w-full">
+                                        Assigned
+                                        <ArrowUpDown
+                                            className="inline-block ml-1 opacity-30"
+                                            size={14}
+                                        />
+                                        <Tooltip>
+                                            <TooltipTrigger className="inline-block ml-1">
+                                                <HelpCircle
+                                                    className="inline-block opacity-50"
+                                                    size={16}
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>
+                                                    Number of open pull requests
+                                                    assigned to this user for
+                                                    review.
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
                                 </TableHead>
                                 <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
                                     <div className="flex items-center justify-end">
                                         Approved (7d)
+                                        <ArrowUpDown
+                                            className="inline-block ml-1 opacity-30"
+                                            size={14}
+                                        />
                                         <Tooltip>
                                             <TooltipTrigger className="inline-block ml-1">
                                                 <HelpCircle
@@ -239,7 +351,7 @@ export function HomeSkeleton() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {Array.from({ length: 10 }).map((_, id) => (
+                            {Array.from({ length: 8 }).map((_, id) => (
                                 <TableRow
                                     key={id}
                                     className="border-border hover:bg-muted/50 transition-colors"

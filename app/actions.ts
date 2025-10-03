@@ -1,6 +1,5 @@
 "use server";
 import {
-    CollaboratorsQueryResponse,
     PullRequest,
     QueryResponse,
     ReviewedPRQueryResponse,
@@ -13,24 +12,9 @@ const GITHUB_API_URL = "https://api.github.com/graphql";
 const REPO_OWNER = "legrande-health";
 const REPO_NAME = "nomp";
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const EXCLUDED_REVIEWERS = ["copilot-pull-request-reviewer"];
 
 // --- GraphQL Query ---
-const getCollaboratorsQuery = gql`
-    query GetCollaborators($owner: String!, $name: String!, $cursor: String) {
-        repository(owner: $owner, name: $name) {
-            collaborators(first: 100, after: $cursor) {
-                pageInfo {
-                    endCursor
-                    hasNextPage
-                }
-                nodes {
-                    login
-                }
-            }
-        }
-    }
-`;
-
 const getPullRequestsQuery = gql`
     query GetPullRequests($owner: String!, $name: String!, $cursor: String) {
         repository(owner: $owner, name: $name) {
@@ -91,48 +75,6 @@ const getReviewedPullRequestsQuery = gql`
         }
     }
 `;
-
-/**
- * Fetches all collaborators from the specified repository, handling pagination.
- * @param client - The GraphQL client instance.
- * @returns A promise that resolves to an array of collaborator logins.
- */
-async function fetchAllCollaborators(client: GraphQLClient): Promise<string[]> {
-    let allCollaborators: string[] = [];
-    let hasNextPage = true;
-    let cursor: string | null = null;
-
-    while (hasNextPage) {
-        const variables = {
-            owner: REPO_OWNER,
-            name: REPO_NAME,
-            cursor: cursor,
-        };
-
-        try {
-            const data: CollaboratorsQueryResponse = await client.request(
-                getCollaboratorsQuery,
-                variables
-            );
-            const { collaborators } = data.repository;
-
-            if (collaborators) {
-                allCollaborators = allCollaborators.concat(
-                    collaborators.nodes.map((c: { login: string }) => c.login)
-                );
-                hasNextPage = collaborators.pageInfo.hasNextPage;
-                cursor = collaborators.pageInfo.endCursor;
-            } else {
-                hasNextPage = false;
-            }
-        } catch (error) {
-            console.error("Error fetching collaborators:", error);
-            hasNextPage = false;
-        }
-    }
-
-    return allCollaborators;
-}
 
 /**
  * Fetches all open pull requests from the specified repository, handling pagination.
@@ -217,20 +159,43 @@ export async function getAssignedPRCounts() {
         },
     });
 
-    const [allPullRequests, allCollaborators, reviewedPullRequests] =
-        await Promise.all([
-            fetchAllPullRequests(client),
-            fetchAllCollaborators(client),
-            fetchReviewedPullRequests(client),
-        ]);
+    const [allPullRequests, reviewedPullRequests] = await Promise.all([
+        fetchAllPullRequests(client),
+        fetchReviewedPullRequests(client),
+    ]);
 
     const assignedPRsCount = new Map<string, number>();
     const approvedPRsCount = new Map<string, number>();
 
-    // Initialize all collaborators with 0 PRs.
-    for (const collaborator of allCollaborators) {
-        assignedPRsCount.set(collaborator, 0);
-        approvedPRsCount.set(collaborator, 0);
+    // Track users who have reviewed PRs in the last 30 days
+    const activeReviewers = new Set<string>();
+
+    // First pass: identify active reviewers from the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    for (const pr of reviewedPullRequests) {
+        for (const review of pr.reviews.nodes) {
+            if (review.author) {
+                const reviewDate = new Date(review.createdAt);
+                const reviewerLogin = review.author.login;
+
+                // Filter out excluded reviewers (bots, etc.)
+                if (EXCLUDED_REVIEWERS.includes(reviewerLogin)) {
+                    continue;
+                }
+
+                if (reviewDate >= thirtyDaysAgo) {
+                    activeReviewers.add(reviewerLogin);
+                }
+            }
+        }
+    }
+
+    // Initialize only active reviewers with 0 PRs
+    for (const reviewer of activeReviewers) {
+        assignedPRsCount.set(reviewer, 0);
+        approvedPRsCount.set(reviewer, 0);
     }
 
     if (allPullRequests.length === 0) {
