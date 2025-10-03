@@ -2,6 +2,7 @@ import { getAssignedPRCounts } from "./actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ExternalLink, HelpCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
     Table,
     TableBody,
@@ -238,41 +239,25 @@ export function HomeSkeleton() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {Array.from({ length: 13 }).map((_, id) => (
+                            {Array.from({ length: 10 }).map((_, id) => (
                                 <TableRow
                                     key={id}
                                     className="border-border hover:bg-muted/50 transition-colors"
                                 >
                                     <TableCell>
-                                        <Avatar className="border-2 border-border">
-                                            <AvatarFallback className="bg-muted font-mono">
-                                                A
-                                            </AvatarFallback>
-                                        </Avatar>
+                                        <Skeleton className="h-10 w-10 rounded-full" />
                                     </TableCell>
                                     <TableCell className="font-medium">
-                                        <span className="hover:underline underline-offset-2">
-                                            --
-                                        </span>
+                                        <Skeleton className="h-4 w-24" />
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <span className="inline-flex items-center justify-center min-w-[3rem] px-3 py-1 rounded-md bg-primary/10 border border-primary/20 font-mono text-sm font-semibold">
-                                            0
-                                        </span>
+                                        <Skeleton className="h-8 w-12 ml-auto" />
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <span className="inline-flex items-center justify-center min-w-[3rem] px-3 py-1 rounded-md bg-green-500/10 border border-green-500/20 font-mono text-sm font-semibold">
-                                            0
-                                        </span>
+                                        <Skeleton className="h-8 w-12 ml-auto" />
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <span className="inline-flex items-center gap-1 hover:underline ml-auto">
-                                            View PRs
-                                            <ExternalLink
-                                                className="opacity-50"
-                                                size={12}
-                                            />
-                                        </span>
+                                        <Skeleton className="h-4 w-20 ml-auto" />
                                     </TableCell>
                                 </TableRow>
                             ))}

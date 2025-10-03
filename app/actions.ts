@@ -102,8 +102,6 @@ async function fetchAllCollaborators(client: GraphQLClient): Promise<string[]> {
     let hasNextPage = true;
     let cursor: string | null = null;
 
-    console.log(`Fetching collaborators from ${REPO_OWNER}/${REPO_NAME}...`);
-
     while (hasNextPage) {
         const variables = {
             owner: REPO_OWNER,
@@ -133,7 +131,6 @@ async function fetchAllCollaborators(client: GraphQLClient): Promise<string[]> {
         }
     }
 
-    console.log(`Found a total of ${allCollaborators.length} collaborators.`);
     return allCollaborators;
 }
 
@@ -148,8 +145,6 @@ async function fetchAllPullRequests(
     let allPullRequests: PullRequest[] = [];
     let hasNextPage = true;
     let cursor: string | null = null;
-
-    console.log(`Fetching pull requests from ${REPO_OWNER}/${REPO_NAME}...`);
 
     while (hasNextPage) {
         const variables = {
@@ -168,24 +163,12 @@ async function fetchAllPullRequests(
             allPullRequests = allPullRequests.concat(pullRequests.nodes);
             hasNextPage = pullRequests.pageInfo.hasNextPage;
             cursor = pullRequests.pageInfo.endCursor;
-
-            console.log(
-                `Fetched a page of ${pullRequests.nodes.length} pull requests.`
-            );
         } catch (error) {
             console.error("Error fetching pull requests:", error);
             // Stop pagination on error
             hasNextPage = false;
         }
     }
-
-    console.log(
-        `Found a total of ${allPullRequests.length} open pull requests.`
-    );
-    const prsWithReviewers = allPullRequests.filter(
-        (pr) => pr.reviewRequests.nodes.length > 0
-    );
-    console.log(`${prsWithReviewers.length} of those have reviewers.`);
 
     return allPullRequests;
 }
@@ -198,8 +181,6 @@ async function fetchAllPullRequests(
 async function fetchReviewedPullRequests(
     client: GraphQLClient
 ): Promise<ReviewedPullRequest[]> {
-    console.log(`Fetching last 100 PRs from ${REPO_OWNER}/${REPO_NAME}...`);
-
     const variables = {
         owner: REPO_OWNER,
         name: REPO_NAME,
@@ -212,25 +193,6 @@ async function fetchReviewedPullRequests(
             variables
         );
         const { pullRequests } = data.repository;
-
-        console.log(`Fetched ${pullRequests.nodes.length} pull requests.`);
-
-        // Debug: Count how many have reviews
-        const prsWithReviews = pullRequests.nodes.filter(
-            (pr) => pr.reviews.nodes.length > 0
-        );
-        console.log(`${prsWithReviews.length} PRs have reviews.`);
-
-        // Debug: Count approved reviews
-        const approvedReviews = pullRequests.nodes.reduce((count, pr) => {
-            return (
-                count +
-                pr.reviews.nodes.filter((r) => r.state === "APPROVED").length
-            );
-        }, 0);
-        console.log(
-            `Found ${approvedReviews} total APPROVED reviews across all PRs.`
-        );
 
         return pullRequests.nodes;
     } catch (error) {
@@ -303,31 +265,21 @@ export async function getAssignedPRCounts() {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    console.log(`Counting approvals since ${sevenDaysAgo.toISOString()}...`);
-
     // Use a Map of Sets to track unique PRs approved by each user
     const approvedPRsMap = new Map<string, Set<number>>();
-
-    let totalApprovedReviews = 0;
-    let approvedInWindow = 0;
-    let selfApprovals = 0;
 
     for (const pr of reviewedPullRequests) {
         const prAuthor = pr.author?.login;
 
         for (const review of pr.reviews.nodes) {
             if (review.state === "APPROVED" && review.author) {
-                totalApprovedReviews++;
                 const reviewDate = new Date(review.createdAt);
                 const reviewAuthor = review.author.login;
 
                 // Check if within time window
                 if (reviewDate >= sevenDaysAgo) {
-                    approvedInWindow++;
-
                     // Check if self-approval
                     if (reviewAuthor === prAuthor) {
-                        selfApprovals++;
                         continue;
                     }
 
@@ -340,20 +292,10 @@ export async function getAssignedPRCounts() {
             }
         }
     }
-
-    console.log(`Total approved reviews found: ${totalApprovedReviews}`);
-    console.log(`Approved reviews in last 7 days: ${approvedInWindow}`);
-    console.log(`Self-approvals filtered out: ${selfApprovals}`);
-
     // Convert Sets to counts
     for (const [login, prSet] of approvedPRsMap.entries()) {
         approvedPRsCount.set(login, prSet.size);
     }
-
-    console.log(
-        "Approved PRs count by user:",
-        Object.fromEntries(approvedPRsCount)
-    );
 
     // Combine the data and sort by assigned count (descending)
     const combinedData = [...assignedPRsCount.entries()].map(
