@@ -12,6 +12,33 @@ export interface PullRequest {
     };
 }
 
+export interface Review {
+    author: {
+        login: string;
+    };
+    state: string;
+    createdAt: string;
+}
+
+export interface ReviewedPullRequest {
+    number: number;
+    author: {
+        login: string;
+    };
+    reviews: {
+        nodes: Review[];
+    };
+}
+
+export interface ReviewedPRQueryResponse {
+    repository: {
+        pullRequests: {
+            pageInfo: PageInfo;
+            nodes: ReviewedPullRequest[];
+        };
+    };
+}
+
 export interface PageInfo {
     endCursor: string;
     hasNextPage: boolean;

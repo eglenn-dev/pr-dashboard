@@ -3,6 +3,8 @@ import {
     CollaboratorsQueryResponse,
     PullRequest,
     QueryResponse,
+    ReviewedPRQueryResponse,
+    ReviewedPullRequest,
 } from "@/lib/types";
 import { GraphQLClient, gql } from "graphql-request";
 
@@ -45,6 +47,43 @@ const getPullRequestsQuery = gql`
                                     login
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+`;
+
+const getReviewedPullRequestsQuery = gql`
+    query GetReviewedPullRequests(
+        $owner: String!
+        $name: String!
+        $cursor: String
+    ) {
+        repository(owner: $owner, name: $name) {
+            pullRequests(
+                first: 100
+                after: $cursor
+                states: [OPEN, MERGED, CLOSED]
+                orderBy: { field: UPDATED_AT, direction: DESC }
+            ) {
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                }
+                nodes {
+                    number
+                    author {
+                        login
+                    }
+                    reviews(first: 100) {
+                        nodes {
+                            author {
+                                login
+                            }
+                            state
+                            createdAt
                         }
                     }
                 }
@@ -152,6 +191,55 @@ async function fetchAllPullRequests(
 }
 
 /**
+ * Fetches the last 100 pull requests with reviews from the specified repository.
+ * @param client - The GraphQL client instance.
+ * @returns A promise that resolves to an array of the last 100 pull requests.
+ */
+async function fetchReviewedPullRequests(
+    client: GraphQLClient
+): Promise<ReviewedPullRequest[]> {
+    console.log(`Fetching last 100 PRs from ${REPO_OWNER}/${REPO_NAME}...`);
+
+    const variables = {
+        owner: REPO_OWNER,
+        name: REPO_NAME,
+        cursor: null,
+    };
+
+    try {
+        const data: ReviewedPRQueryResponse = await client.request(
+            getReviewedPullRequestsQuery,
+            variables
+        );
+        const { pullRequests } = data.repository;
+
+        console.log(`Fetched ${pullRequests.nodes.length} pull requests.`);
+
+        // Debug: Count how many have reviews
+        const prsWithReviews = pullRequests.nodes.filter(
+            (pr) => pr.reviews.nodes.length > 0
+        );
+        console.log(`${prsWithReviews.length} PRs have reviews.`);
+
+        // Debug: Count approved reviews
+        const approvedReviews = pullRequests.nodes.reduce((count, pr) => {
+            return (
+                count +
+                pr.reviews.nodes.filter((r) => r.state === "APPROVED").length
+            );
+        }, 0);
+        console.log(
+            `Found ${approvedReviews} total APPROVED reviews across all PRs.`
+        );
+
+        return pullRequests.nodes;
+    } catch (error) {
+        console.error("Error fetching reviewed pull requests:", error);
+        return [];
+    }
+}
+
+/**
  * Main function to orchestrate fetching, counting, and displaying the results.
  */
 export async function getAssignedPRCounts() {
@@ -167,16 +255,20 @@ export async function getAssignedPRCounts() {
         },
     });
 
-    const [allPullRequests, allCollaborators] = await Promise.all([
-        fetchAllPullRequests(client),
-        fetchAllCollaborators(client),
-    ]);
+    const [allPullRequests, allCollaborators, reviewedPullRequests] =
+        await Promise.all([
+            fetchAllPullRequests(client),
+            fetchAllCollaborators(client),
+            fetchReviewedPullRequests(client),
+        ]);
 
     const assignedPRsCount = new Map<string, number>();
+    const approvedPRsCount = new Map<string, number>();
 
     // Initialize all collaborators with 0 PRs.
     for (const collaborator of allCollaborators) {
         assignedPRsCount.set(collaborator, 0);
+        approvedPRsCount.set(collaborator, 0);
     }
 
     if (allPullRequests.length === 0) {
@@ -184,11 +276,14 @@ export async function getAssignedPRCounts() {
         const sortedCounts = [...assignedPRsCount.entries()].sort((a, b) =>
             a[0].localeCompare(b[0])
         );
-        return sortedCounts;
+        return sortedCounts.map(([login, assignedCount]) => ({
+            login,
+            assignedCount,
+            approvedCount: 0,
+        }));
     }
 
-    // Use a Map to store the count of assigned PRs for each user.
-
+    // Count assigned PRs
     for (const pr of allPullRequests) {
         for (const reviewRequest of pr.reviewRequests.nodes) {
             if (reviewRequest.requestedReviewer) {
@@ -204,9 +299,73 @@ export async function getAssignedPRCounts() {
         }
     }
 
-    // Sort the results for better readability
-    const sortedCounts = [...assignedPRsCount.entries()].sort(
-        (a, b) => b[1] - a[1]
+    // Count approved PRs from the last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    console.log(`Counting approvals since ${sevenDaysAgo.toISOString()}...`);
+
+    // Use a Map of Sets to track unique PRs approved by each user
+    const approvedPRsMap = new Map<string, Set<number>>();
+
+    let totalApprovedReviews = 0;
+    let approvedInWindow = 0;
+    let selfApprovals = 0;
+
+    for (const pr of reviewedPullRequests) {
+        const prAuthor = pr.author?.login;
+
+        for (const review of pr.reviews.nodes) {
+            if (review.state === "APPROVED" && review.author) {
+                totalApprovedReviews++;
+                const reviewDate = new Date(review.createdAt);
+                const reviewAuthor = review.author.login;
+
+                // Check if within time window
+                if (reviewDate >= sevenDaysAgo) {
+                    approvedInWindow++;
+
+                    // Check if self-approval
+                    if (reviewAuthor === prAuthor) {
+                        selfApprovals++;
+                        continue;
+                    }
+
+                    if (!approvedPRsMap.has(reviewAuthor)) {
+                        approvedPRsMap.set(reviewAuthor, new Set());
+                    }
+                    // Add the PR number to the set (automatically handles duplicates)
+                    approvedPRsMap.get(reviewAuthor)!.add(pr.number);
+                }
+            }
+        }
+    }
+
+    console.log(`Total approved reviews found: ${totalApprovedReviews}`);
+    console.log(`Approved reviews in last 7 days: ${approvedInWindow}`);
+    console.log(`Self-approvals filtered out: ${selfApprovals}`);
+
+    // Convert Sets to counts
+    for (const [login, prSet] of approvedPRsMap.entries()) {
+        approvedPRsCount.set(login, prSet.size);
+    }
+
+    console.log(
+        "Approved PRs count by user:",
+        Object.fromEntries(approvedPRsCount)
+    );
+
+    // Combine the data and sort by assigned count (descending)
+    const combinedData = [...assignedPRsCount.entries()].map(
+        ([login, assignedCount]) => ({
+            login,
+            assignedCount,
+            approvedCount: approvedPRsCount.get(login) || 0,
+        })
+    );
+
+    const sortedCounts = combinedData.sort(
+        (a, b) => b.assignedCount - a.assignedCount
     );
 
     return sortedCounts;

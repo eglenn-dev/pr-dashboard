@@ -69,24 +69,46 @@ export default async function Home() {
                                     </Tooltip>
                                 </TableHead>
                                 <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
+                                    <div className="flex items-center justify-end">
+                                        Approved (7d)
+                                        <Tooltip>
+                                            <TooltipTrigger className="inline-block ml-1">
+                                                <HelpCircle
+                                                    className="inline-block opacity-50"
+                                                    size={16}
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>
+                                                    Number of pull requests
+                                                    approved by this user in the
+                                                    last 7 days.
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                </TableHead>
+                                <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
                                     View
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {assignedPRCounts.map(([login, count]) => (
+                            {assignedPRCounts.map((user) => (
                                 <TableRow
-                                    key={login}
+                                    key={user.login}
                                     className="border-border hover:bg-muted/50 transition-colors"
                                 >
                                     <TableCell>
                                         <Avatar className="border-2 border-border">
                                             <AvatarImage
-                                                src={`https://github.com/${login}.png`}
-                                                alt={`@${login}`}
+                                                src={`https://github.com/${user.login}.png`}
+                                                alt={`@${user.login}`}
                                             />
                                             <AvatarFallback className="bg-muted font-mono">
-                                                {login.charAt(0).toUpperCase()}
+                                                {user.login
+                                                    .charAt(0)
+                                                    .toUpperCase()}
                                             </AvatarFallback>
                                         </Avatar>
                                     </TableCell>
@@ -94,21 +116,26 @@ export default async function Home() {
                                         <a
                                             target="_blank"
                                             className="hover:underline underline-offset-2"
-                                            href={`https://github.com/${login}`}
+                                            href={`https://github.com/${user.login}`}
                                         >
-                                            {login}
+                                            {user.login}
                                         </a>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <span className="inline-flex items-center justify-center min-w-[3rem] px-3 py-1 rounded-md bg-primary/10 border border-primary/20 font-mono text-sm font-semibold">
-                                            {count}
+                                            {user.assignedCount}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <span className="inline-flex items-center justify-center min-w-[3rem] px-3 py-1 rounded-md bg-green-500/10 border border-green-500/20 font-mono text-sm font-semibold">
+                                            {user.approvedCount}
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <a
                                             target="_blank"
                                             className="inline-flex items-center gap-1 hover:underline ml-auto"
-                                            href={`https://github.com/legrande-health/nomp/pulls?q=is%3Apr+is%3Aopen+user-review-requested%3A${login}`}
+                                            href={`https://github.com/legrande-health/nomp/pulls?q=is%3Apr+is%3Aopen+user-review-requested%3A${user.login}`}
                                             rel="noreferrer"
                                         >
                                             View PRs
@@ -186,6 +213,26 @@ export function HomeSkeleton() {
                                     </Tooltip>
                                 </TableHead>
                                 <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
+                                    <div className="flex items-center justify-end">
+                                        Approved (7d)
+                                        <Tooltip>
+                                            <TooltipTrigger className="inline-block ml-1">
+                                                <HelpCircle
+                                                    className="inline-block opacity-50"
+                                                    size={16}
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>
+                                                    Number of pull requests
+                                                    approved by this user in the
+                                                    last 7 days.
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                </TableHead>
+                                <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
                                     View
                                 </TableHead>
                             </TableRow>
@@ -210,6 +257,11 @@ export function HomeSkeleton() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <span className="inline-flex items-center justify-center min-w-[3rem] px-3 py-1 rounded-md bg-primary/10 border border-primary/20 font-mono text-sm font-semibold">
+                                            0
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <span className="inline-flex items-center justify-center min-w-[3rem] px-3 py-1 rounded-md bg-green-500/10 border border-green-500/20 font-mono text-sm font-semibold">
                                             0
                                         </span>
                                     </TableCell>
