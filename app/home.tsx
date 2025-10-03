@@ -105,7 +105,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                     <div className="flex justify-between items-center">
                         <div></div>
                         <div className="text-center">
-                            <h1 className="text-4xl font-bold font-mono tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                            <h1 className="text-4xl font-bold font-mono">
                                 NOMP_PR_DASHBOARD
                             </h1>
                             <p className="text-sm text-muted-foreground font-mono">
@@ -137,7 +137,10 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                                         Assigned
                                         {getSortIcon("assigned")}
                                         <Tooltip>
-                                            <TooltipTrigger className="inline-block ml-1">
+                                            <TooltipTrigger
+                                                asChild
+                                                className="inline-block ml-1"
+                                            >
                                                 <HelpCircle
                                                     className="inline-block opacity-50"
                                                     size={16}
@@ -161,7 +164,10 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                                         Approved (7d)
                                         {getSortIcon("approved")}
                                         <Tooltip>
-                                            <TooltipTrigger className="inline-block ml-1">
+                                            <TooltipTrigger
+                                                asChild
+                                                className="inline-block ml-1"
+                                            >
                                                 <HelpCircle
                                                     className="inline-block opacity-50"
                                                     size={16}
@@ -273,7 +279,7 @@ export function HomeSkeleton() {
                     <div className="flex justify-between items-center">
                         <div></div>
                         <div className="text-center mt-4">
-                            <h1 className="text-4xl font-bold font-mono tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                            <h1 className="text-4xl font-bold font-mono">
                                 NOMP_PR_DASHBOARD
                             </h1>
                             <p className="text-sm text-muted-foreground font-mono">
