@@ -1,7 +1,8 @@
 "use client";
-
+import { DashboardConfig } from "@/dashboard.config";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useState, useMemo } from "react";
 import {
     ExternalLink,
     HelpCircle,
@@ -24,7 +25,6 @@ import {
     TooltipTrigger,
     TooltipContent,
 } from "@/components/ui/tooltip";
-import { useState, useMemo } from "react";
 
 type SortField = "assigned" | "approved" | null;
 type SortDirection = "asc" | "desc";
@@ -106,7 +106,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                         <div></div>
                         <div className="text-center">
                             <h1 className="text-4xl font-bold font-mono">
-                                NOMP_PR_DASHBOARD
+                                {DashboardConfig.home.title}
                             </h1>
                             <p className="text-sm text-muted-foreground font-mono">
                                 {">"} Monitoring assigned pull requests
@@ -244,7 +244,9 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                                         <a
                                             target="_blank"
                                             className="inline-flex items-center gap-1 hover:underline ml-auto"
-                                            href={`https://github.com/legrande-health/nomp/pulls?q=is%3Apr+is%3Aopen+user-review-requested%3A${user.login}`}
+                                            href={DashboardConfig.pullRequestBaseURL(
+                                                user.login
+                                            )}
                                             rel="noreferrer"
                                         >
                                             View PRs

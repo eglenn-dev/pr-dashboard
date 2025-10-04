@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { DashboardConfig } from "@/dashboard.config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "NOMP_PR_DASHBOARD",
-    description: "Created by Ethan Glenn",
+    title: DashboardConfig.home.title,
+    description: DashboardConfig.home.description,
 };
 
 export default function RootLayout({

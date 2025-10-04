@@ -1,4 +1,5 @@
 "use server";
+import { DashboardConfig } from "@/dashboard.config";
 import {
     PullRequest,
     QueryResponse,
@@ -6,13 +7,6 @@ import {
     ReviewedPullRequest,
 } from "@/lib/types";
 import { GraphQLClient, gql } from "graphql-request";
-
-// --- Configuration ---
-const GITHUB_API_URL = "https://api.github.com/graphql";
-const REPO_OWNER = "legrande-health";
-const REPO_NAME = "nomp";
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const EXCLUDED_REVIEWERS = ["copilot-pull-request-reviewer"];
 
 // --- GraphQL Query ---
 const getPullRequestsQuery = gql`
@@ -90,8 +84,8 @@ async function fetchAllPullRequests(
 
     while (hasNextPage) {
         const variables = {
-            owner: REPO_OWNER,
-            name: REPO_NAME,
+            owner: DashboardConfig.REPO_OWNER,
+            name: DashboardConfig.REPO_NAME,
             cursor: cursor,
         };
 
@@ -124,8 +118,8 @@ async function fetchReviewedPullRequests(
     client: GraphQLClient
 ): Promise<ReviewedPullRequest[]> {
     const variables = {
-        owner: REPO_OWNER,
-        name: REPO_NAME,
+        owner: DashboardConfig.REPO_OWNER,
+        name: DashboardConfig.REPO_NAME,
         cursor: null,
     };
 
@@ -147,15 +141,15 @@ async function fetchReviewedPullRequests(
  * Main function to orchestrate fetching, counting, and displaying the results.
  */
 export async function getAssignedPRCounts() {
-    if (!GITHUB_TOKEN) {
+    if (!process.env.GITHUB_TOKEN) {
         throw new Error(
             "GitHub token is not set. Please set the GITHUB_TOKEN environment variable."
         );
     }
 
-    const client = new GraphQLClient(GITHUB_API_URL, {
+    const client = new GraphQLClient(DashboardConfig.GITHUB_API_URL, {
         headers: {
-            Authorization: `Bearer ${GITHUB_TOKEN}`,
+            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
         },
     });
 
@@ -181,7 +175,9 @@ export async function getAssignedPRCounts() {
                 const reviewerLogin = review.author.login;
 
                 // Filter out excluded reviewers (bots, etc.)
-                if (EXCLUDED_REVIEWERS.includes(reviewerLogin)) {
+                if (
+                    DashboardConfig.EXCLUDED_REVIEWERS.includes(reviewerLogin)
+                ) {
                     continue;
                 }
 
