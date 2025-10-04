@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+    <h1>PR Dashboard</h1>
+    <p>A Next.js-based dashboard for monitoring pull request reviews in a given repository.</p>
+    <p>
+        <img alt="Next.js" src="https://img.shields.io/badge/-Next.js-000000?style=flat-square&logo=next.js&logoColor=white" />
+        <img alt="React" src="https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=white" />
+        <img alt="TypeScript" src="https://img.shields.io/badge/-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" />
+        <img alt="Tailwind CSS" src="https://img.shields.io/badge/-Tailwind%20CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white" />
+        <img alt="Vercel" src="https://img.shields.io/badge/-Vercel-000000?style=flat-square&logo=vercel&logoColor=white" />
+        <img alt="shadcn/ui" src="https://img.shields.io/badge/-shadcn%2Fui-111827?style=flat-square&logo=shadcnui&logoColor=white" />
+    </p>
+</div>
 
-## Getting Started
+## Features
 
-First, run the development server:
+-   View open pull requests requiring review
+-   Filter by reviewer
+-   Exclude specific reviewers (e.g., automated reviewers)
+-   Dark/light theme support
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Prerequisites
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+-   Node.js (version 18 or higher)
+-   npm or yarn
+-   A GitHub Personal Access Token with repository read access
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Clone the repository:**
 
-## Learn More
+    ```bash
+    git clone https://github.com/eglenn-dev/pr-dashboard.git
+    cd pr-dashboard
+    ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Install dependencies:**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+    ```bash
+    npm install
+    ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. **Set up environment variables:**
 
-## Deploy on Vercel
+    - Copy the sample environment file:
+        ```bash
+        cp sample.env .env
+        ```
+    - Edit `.env` and replace `your_github_token_here` with your actual GitHub Personal Access Token.
+        - To create a GitHub token, go to [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/personal-access-tokens) and generate a new token with `repo` scope.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+4. **Configure the dashboard:**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+    - Open `dashboard.config.ts` and update the following settings:
+        - `REPO_OWNER`: Set to your GitHub repository owner (e.g., "legrande-health")
+        - `REPO_NAME`: Set to your repository name (e.g., "nomp")
+        - `EXCLUDED_REVIEWERS`: Add any reviewers you want to exclude from the dashboard (default: ["copilot-pull-request-reviewer"])
+        - Optionally, update the `home.title` and `home.description` if desired.
+
+5. **Run the development server:**
+
+    ```bash
+    npm run dev
+    ```
+
+6. **Open your browser:**
+    - Navigate to [http://localhost:3000](http://localhost:3000) to view the dashboard.
+
+## Available Scripts
+
+-   `npm run dev` - Start the development server with Turbopack
+-   `npm run build` - Build the application for production
+-   `npm run start` - Start the production server
+
+## Technologies Used
+
+-   [Next.js](https://nextjs.org) - React framework
+-   [Tailwind CSS](https://tailwindcss.com) - Utility-first CSS framework
+-   [shadcn/ui](https://ui.shadcn.com) - Component library
+-   [GraphQL](https://graphql.org) - Query language for APIs
+-   [GitHub API](https://docs.github.com/en/rest) - For fetching PR data
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+This project is private and created by [Ethan Glenn](https://ethanglenn.dev).
