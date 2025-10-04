@@ -11,6 +11,8 @@
     </p>
 </div>
 
+![Dashboard Screenshot](./public/screenshot.png)
+
 ## Features
 
 -   View open pull requests requiring review
