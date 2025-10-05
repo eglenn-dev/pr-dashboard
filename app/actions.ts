@@ -151,6 +151,7 @@ export async function getAssignedPRCounts() {
         headers: {
             Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
         },
+        next: { revalidate: 300 },
     });
 
     const [allPullRequests, reviewedPullRequests] = await Promise.all([
