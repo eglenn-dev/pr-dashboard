@@ -5,10 +5,12 @@ import {
     DialogContent,
     DialogDescription,
     DialogTitle,
+    DialogClose,
 } from "./ui/dialog";
 
 export function EasterEgg() {
     const [keySequence, setKeySequence] = useState("");
+    const [chadMode, setChadMode] = useState(false);
     const targetSequence = "chad";
 
     useEffect(() => {
@@ -24,16 +26,18 @@ export function EasterEgg() {
             });
         };
 
+        if (keySequence === targetSequence) setChadMode(true);
+
         window.addEventListener("keydown", handleKeyDown);
 
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, []);
+    }, [keySequence]);
 
     return (
         <>
-            <Dialog open={keySequence === targetSequence}>
+            <Dialog open={chadMode} onOpenChange={setChadMode}>
                 <DialogContent className="flex flex-col items-center gap-4">
                     <DialogTitle className="text-2xl font-bold">
                         Chad Mode Activated
