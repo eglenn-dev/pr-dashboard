@@ -25,6 +25,7 @@ import {
     TooltipTrigger,
     TooltipContent,
 } from "@/components/ui/tooltip";
+import { EasterEgg } from "@/components/easter-egg";
 
 type SortField = "assigned" | "approved" | null;
 type SortDirection = "asc" | "desc";
@@ -269,6 +270,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                     </p>
                 </div>
             </div>
+            <EasterEgg />
         </div>
     );
 }
