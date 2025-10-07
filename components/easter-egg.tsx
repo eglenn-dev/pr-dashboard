@@ -5,7 +5,6 @@ import {
     DialogContent,
     DialogDescription,
     DialogTitle,
-    DialogClose,
 } from "./ui/dialog";
 
 export function EasterEgg() {
