@@ -2,7 +2,7 @@
 import { DashboardConfig } from "@/dashboard.config";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
     ExternalLink,
     HelpCircle,
@@ -26,7 +26,7 @@ import {
     TooltipContent,
 } from "@/components/ui/tooltip";
 import { ChadEasterEgg } from "@/components/easter-eggs/chad-easter-egg";
-import { UnicornEasterEgg } from "@/components/easter-eggs/unicorn-easter-egg";
+import { EliEasterEgg } from "@/components/easter-eggs/eli-easter-egg";
 
 type SortField = "assigned" | "approved" | null;
 type SortDirection = "asc" | "desc";
@@ -44,6 +44,7 @@ interface HomeProps {
 export default function Home({ assignedPRCounts }: HomeProps) {
     const [sortField, setSortField] = useState<SortField>(null);
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+    const [isJ, setIsJ] = useState(false);
 
     const handleSort = (field: SortField) => {
         if (sortField === field) {
@@ -100,6 +101,19 @@ export default function Home({ assignedPRCounts }: HomeProps) {
             <ArrowDown className="inline-block ml-1" size={16} />
         );
     };
+
+    useEffect(() => {
+        const handleKeyPress = (e: KeyboardEvent) => {
+            if (e.key.toLowerCase() === "j") {
+                setIsJ(true);
+                setTimeout(() => setIsJ(false), 5000);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyPress);
+        return () => window.removeEventListener("keydown", handleKeyPress);
+    }, []);
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <div className="w-full max-w-3xl">
@@ -213,7 +227,11 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                                     <TableCell>
                                         <Avatar className="border-2 border-border">
                                             <AvatarImage
-                                                src={`https://github.com/${user.login}.png`}
+                                                src={
+                                                    isJ
+                                                        ? "/happy_j.jpg"
+                                                        : `https://github.com/${user.login}.png`
+                                                }
                                                 alt={`@${user.login}`}
                                             />
                                             <AvatarFallback className="bg-muted font-mono">
@@ -229,7 +247,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                                             className="hover:underline underline-offset-2"
                                             href={`https://github.com/${user.login}`}
                                         >
-                                            {user.login}
+                                            {isJ ? "Happy J" : user.login}
                                         </a>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -272,7 +290,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                 </div>
             </div>
             <ChadEasterEgg />
-            <UnicornEasterEgg />
+            <EliEasterEgg />
         </div>
     );
 }

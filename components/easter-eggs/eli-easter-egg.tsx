@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 
-export function UnicornEasterEgg() {
+export function EliEasterEgg() {
     const [, setKeys] = useState<string[]>([]);
     const [showUnicorn, setShowUnicorn] = useState(false);
 
@@ -52,7 +52,8 @@ export function UnicornEasterEgg() {
                             animation: "flyDiagonal 3s linear forwards",
                         }}
                     >
-                        <div className="text-6xl">🦄</div>
+                        {/* eslint-disable @next/next/no-img-element */}
+                        <img src="/eli.jpeg" alt="Eli" className="h-48 w-48" />
                     </div>
                 )}
             </div>
