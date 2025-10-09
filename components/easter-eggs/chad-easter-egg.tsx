@@ -5,9 +5,9 @@ import {
     DialogContent,
     DialogDescription,
     DialogTitle,
-} from "./ui/dialog";
+} from "../ui/dialog";
 
-export function EasterEgg() {
+export function ChadEasterEgg() {
     const [keySequence, setKeySequence] = useState("");
     const [chadMode, setChadMode] = useState(false);
     const targetSequence = "chad";
