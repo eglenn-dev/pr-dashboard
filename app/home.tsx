@@ -148,7 +148,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                                 <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
                                     <button
                                         onClick={() => handleSort("assigned")}
-                                        className="flex items-center justify-end w-full hover:text-foreground transition-colors cursor-pointer"
+                                        className="flex items-center uppercase justify-end w-full hover:text-foreground transition-colors cursor-pointer"
                                     >
                                         Assigned
                                         {getSortIcon("assigned")}
@@ -175,7 +175,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                                 <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
                                     <button
                                         onClick={() => handleSort("approved")}
-                                        className="flex items-center justify-end w-full hover:text-foreground transition-colors cursor-pointer"
+                                        className="flex items-center uppercase justify-end w-full hover:text-foreground transition-colors cursor-pointer"
                                     >
                                         Approved (7d)
                                         {getSortIcon("approved")}
