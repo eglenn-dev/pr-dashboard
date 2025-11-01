@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Home, { HomeSkeleton } from "./home";
 import { getAssignedPRCounts } from "./actions";
-import { cacheLife, cacheTag } from "next/cache";
+import { cacheLife } from "next/cache";
 
 async function HomeWithData() {
     "use cache";
