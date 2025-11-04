@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ChadEasterEgg } from "@/components/easter-eggs/chad-easter-egg";
 import { EliEasterEgg } from "@/components/easter-eggs/eli-easter-egg";
+import { TuckerEasterEgg } from "@/components/easter-eggs/tucker-easter-egg";
 
 type SortField = "assigned" | "approved" | null;
 type SortDirection = "asc" | "desc";
@@ -291,6 +292,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
             </div>
             <ChadEasterEgg />
             <EliEasterEgg />
+            <TuckerEasterEgg />
         </div>
     );
 }
