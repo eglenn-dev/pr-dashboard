@@ -5,7 +5,7 @@ import { cacheLife } from "next/cache";
 
 async function HomeWithData() {
     "use cache";
-    cacheLife("minutes");
+    cacheLife("seconds");
     const assignedPRCounts = await getAssignedPRCounts();
     return <Home assignedPRCounts={assignedPRCounts} />;
 }
