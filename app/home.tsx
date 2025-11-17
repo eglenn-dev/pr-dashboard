@@ -236,7 +236,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                                                 alt={`@${user.login}`}
                                             />
                                             <AvatarFallback className="bg-muted font-mono">
-                                                {user.login
+                                                {(user.login || "?")
                                                     .charAt(0)
                                                     .toUpperCase()}
                                             </AvatarFallback>

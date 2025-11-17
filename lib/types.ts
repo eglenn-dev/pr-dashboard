@@ -15,7 +15,7 @@ export interface PullRequest {
 export interface Review {
     author: {
         login: string;
-    };
+    } | null;
     state: string;
     createdAt: string;
 }
@@ -24,7 +24,7 @@ export interface ReviewedPullRequest {
     number: number;
     author: {
         login: string;
-    };
+    } | null;
     reviews: {
         nodes: Review[];
     };

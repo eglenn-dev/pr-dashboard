@@ -71,6 +71,59 @@ const getReviewedPullRequestsQuery = gql`
 `;
 
 /**
+ * Retry wrapper for GraphQL requests with exponential backoff.
+ * Retries on transient errors like 504, 502, 503, and network errors.
+ * @param operation - The async operation to retry
+ * @param maxRetries - Maximum number of retry attempts (default: 3)
+ * @param initialDelayMs - Initial delay in milliseconds (default: 1000)
+ * @returns A promise that resolves to the operation result
+ */
+async function fetchWithRetry<T>(
+    operation: () => Promise<T>,
+    maxRetries = 3,
+    initialDelayMs = 1000
+): Promise<T> {
+    let lastError: any;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await operation();
+        } catch (error: any) {
+            lastError = error;
+            const isLastAttempt = attempt === maxRetries;
+
+            // Check if it's a transient error that we should retry
+            const status = error?.response?.status;
+            const isTransientError =
+                status === 504 || // Gateway Timeout
+                status === 502 || // Bad Gateway
+                status === 503 || // Service Unavailable
+                status === 429 || // Rate Limit
+                error?.code === "ECONNRESET" || // Connection reset
+                error?.code === "ETIMEDOUT" || // Connection timeout
+                error?.code === "ENOTFOUND"; // DNS lookup failed
+
+            if (!isTransientError || isLastAttempt) {
+                // Non-transient error or last attempt - throw immediately
+                throw error;
+            }
+
+            // Calculate exponential backoff delay
+            const delay = initialDelayMs * Math.pow(2, attempt - 1);
+            console.warn(
+                `Transient error (${status || error?.code}) on attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`
+            );
+
+            // Wait before retrying
+            await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+    }
+
+    // Should never reach here, but throw last error just in case
+    throw lastError;
+}
+
+/**
  * Fetches all open pull requests from the specified repository, handling pagination.
  * @param client - The GraphQL client instance.
  * @returns A promise that resolves to an array of all pull requests.
@@ -90,18 +143,20 @@ async function fetchAllPullRequests(
         };
 
         try {
-            const data: QueryResponse = await client.request(
-                getPullRequestsQuery,
-                variables
-            );
+            const data: QueryResponse = await fetchWithRetry(async () => {
+                return await client.request(getPullRequestsQuery, variables);
+            });
             const { pullRequests } = data.repository;
 
             allPullRequests = allPullRequests.concat(pullRequests.nodes);
             hasNextPage = pullRequests.pageInfo.hasNextPage;
             cursor = pullRequests.pageInfo.endCursor;
         } catch (error) {
-            console.error("Error fetching pull requests:", error);
-            // Stop pagination on error
+            console.error(
+                "Error fetching pull requests after retries:",
+                error
+            );
+            // Stop pagination on error and return partial results
             hasNextPage = false;
         }
     }
@@ -124,15 +179,19 @@ async function fetchReviewedPullRequests(
     };
 
     try {
-        const data: ReviewedPRQueryResponse = await client.request(
-            getReviewedPullRequestsQuery,
-            variables
-        );
+        const data: ReviewedPRQueryResponse = await fetchWithRetry(async () => {
+            return await client.request(getReviewedPullRequestsQuery, variables);
+        });
         const { pullRequests } = data.repository;
 
         return pullRequests.nodes;
     } catch (error) {
-        console.error("Error fetching reviewed pull requests:", error);
+        console.error(
+            "Error fetching reviewed pull requests after retries:",
+            error
+        );
+        // Return empty array to allow app to continue with partial data
+        // The retry logic has already attempted to recover from transient errors
         return [];
     }
 }
