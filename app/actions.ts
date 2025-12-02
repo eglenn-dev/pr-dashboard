@@ -254,16 +254,23 @@ export async function getAssignedPRCounts() {
         approvedPRsCount.set(reviewer, 0);
     }
 
+    // Determine approval window: 14 days on Tuesdays, 7 days otherwise
+    const isTuesday = new Date().getDay() === 2;
+    const approvalDays = isTuesday ? 14 : 7;
+
     if (allPullRequests.length === 0) {
         // Return all collaborators with 0 counts if there are no PRs
         const sortedCounts = [...assignedPRsCount.entries()].sort((a, b) =>
             a[0].localeCompare(b[0])
         );
-        return sortedCounts.map(([login, assignedCount]) => ({
-            login,
-            assignedCount,
-            approvedCount: 0,
-        }));
+        return {
+            data: sortedCounts.map(([login, assignedCount]) => ({
+                login,
+                assignedCount,
+                approvedCount: 0,
+            })),
+            approvalDays,
+        };
     }
 
     // Count assigned PRs
@@ -282,9 +289,9 @@ export async function getAssignedPRCounts() {
         }
     }
 
-    // Count approved PRs from the last 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Count approved PRs within the approval window
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - approvalDays);
 
     // Use a Map of Sets to track unique PRs approved by each user
     const approvedPRsMap = new Map<string, Set<number>>();
@@ -298,7 +305,7 @@ export async function getAssignedPRCounts() {
                 const reviewAuthor = review.author.login;
 
                 // Check if within time window
-                if (reviewDate >= sevenDaysAgo) {
+                if (reviewDate >= cutoffDate) {
                     // Check if self-approval
                     if (reviewAuthor === prAuthor) {
                         continue;
@@ -331,5 +338,5 @@ export async function getAssignedPRCounts() {
         (a, b) => b.assignedCount - a.assignedCount
     );
 
-    return sortedCounts;
+    return { data: sortedCounts, approvalDays };
 }

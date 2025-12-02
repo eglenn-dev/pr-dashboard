@@ -40,9 +40,10 @@ interface UserData {
 
 interface HomeProps {
     assignedPRCounts: UserData[];
+    approvalDays: number;
 }
 
-export default function Home({ assignedPRCounts }: HomeProps) {
+export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
     const [sortField, setSortField] = useState<SortField>(null);
     const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
     const [isJ, setIsJ] = useState(false);
@@ -178,7 +179,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                                         onClick={() => handleSort("approved")}
                                         className="flex items-center uppercase justify-end w-full hover:text-foreground transition-colors cursor-pointer"
                                     >
-                                        Approved (7d)
+                                        Approved ({approvalDays}d)
                                         {getSortIcon("approved")}
                                         <Tooltip>
                                             <TooltipTrigger
@@ -194,7 +195,7 @@ export default function Home({ assignedPRCounts }: HomeProps) {
                                                 <p>
                                                     Number of pull requests
                                                     approved by this user in the
-                                                    last 7 days.
+                                                    last {approvalDays} days.
                                                 </p>
                                             </TooltipContent>
                                         </Tooltip>
