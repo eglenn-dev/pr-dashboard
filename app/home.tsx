@@ -384,7 +384,7 @@ export function HomeSkeleton() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {Array.from({ length: 8 }).map((_, id) => (
+                            {Array.from({ length: 6 }).map((_, id) => (
                                 <TableRow
                                     key={id}
                                     className="border-border hover:bg-muted/50 transition-colors"
