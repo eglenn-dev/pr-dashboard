@@ -45,7 +45,7 @@ export function ChadEasterEgg() {
                         You have successfully typed {"'"}chad{"'"}
                     </DialogDescription>
                     {/* eslint-disable @next/next/no-img-element */}
-                    <img src="/chad.jpeg" alt="Chad" />
+                    <img src="/chad.png" alt="Chad" />
                 </DialogContent>
             </Dialog>
         </>
