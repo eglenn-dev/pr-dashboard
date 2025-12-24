@@ -22,8 +22,7 @@
 
 ## Prerequisites
 
--   Node.js (version 18 or higher)
--   npm or yarn
+-   [Bun](https://bun.sh) (version 1.0 or higher)
 -   A GitHub Personal Access Token with repository read access
 
 ## Setup
@@ -38,7 +37,7 @@
 2. **Install dependencies:**
 
     ```bash
-    npm install
+    bun install
     ```
 
 3. **Set up environment variables:**
@@ -61,7 +60,7 @@
 5. **Run the development server:**
 
     ```bash
-    npm run dev
+    bun run dev
     ```
 
 6. **Open your browser:**
@@ -69,9 +68,9 @@
 
 ## Available Scripts
 
--   `npm run dev` - Start the development server with Turbopack
--   `npm run build` - Build the application for production
--   `npm run start` - Start the production server
+-   `bun run dev` - Start the development server with Turbopack
+-   `bun run build` - Build the application for production
+-   `bun run start` - Start the production server
 
 ## Technologies Used
 
