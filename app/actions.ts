@@ -111,7 +111,9 @@ async function fetchWithRetry<T>(
             // Calculate exponential backoff delay
             const delay = initialDelayMs * Math.pow(2, attempt - 1);
             console.warn(
-                `Transient error (${status || error?.code}) on attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`
+                `Transient error (${
+                    status || error?.code
+                }) on attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`
             );
 
             // Wait before retrying
@@ -152,10 +154,7 @@ async function fetchAllPullRequests(
             hasNextPage = pullRequests.pageInfo.hasNextPage;
             cursor = pullRequests.pageInfo.endCursor;
         } catch (error) {
-            console.error(
-                "Error fetching pull requests after retries:",
-                error
-            );
+            console.error("Error fetching pull requests after retries:", error);
             // Stop pagination on error and return partial results
             hasNextPage = false;
         }
@@ -180,7 +179,10 @@ async function fetchReviewedPullRequests(
 
     try {
         const data: ReviewedPRQueryResponse = await fetchWithRetry(async () => {
-            return await client.request(getReviewedPullRequestsQuery, variables);
+            return await client.request(
+                getReviewedPullRequestsQuery,
+                variables
+            );
         });
         const { pullRequests } = data.repository;
 
@@ -255,7 +257,11 @@ export async function getAssignedPRCounts() {
     }
 
     // Determine approval window: 14 days on Tuesdays, 7 days otherwise
-    const isTuesday = new Date().getDay() === 2;
+    // Check if it's Tuesday in MST (Mountain Standard Time)
+    const mstDate = new Date(
+        new Date().toLocaleString("en-US", { timeZone: "America/Denver" })
+    );
+    const isTuesday = mstDate.getDay() === 2;
     const approvalDays = isTuesday ? 14 : 7;
 
     if (allPullRequests.length === 0) {
