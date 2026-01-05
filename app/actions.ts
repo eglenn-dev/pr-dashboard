@@ -256,13 +256,13 @@ export async function getAssignedPRCounts() {
         approvedPRsCount.set(reviewer, 0);
     }
 
-    // Determine approval window: 14 days on Tuesdays, 7 days otherwise
-    // Check if it's Tuesday in MST (Mountain Standard Time)
+    // Determine approval window: 14 days on Mondays, 7 days otherwise
+    // Check if it's Monday in MST (Mountain Standard Time)
     const mstDate = new Date(
         new Date().toLocaleString("en-US", { timeZone: "America/Denver" })
     );
-    const isTuesday = mstDate.getDay() === 2;
-    const approvalDays = isTuesday ? 14 : 7;
+    const isMonday = mstDate.getDay() === 1;
+    const approvalDays = isMonday ? 14 : 7;
 
     if (allPullRequests.length === 0) {
         // Return all collaborators with 0 counts if there are no PRs

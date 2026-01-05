@@ -141,7 +141,7 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
                         </TableCaption>
                         <TableHeader>
                             <TableRow className="border-border hover:bg-transparent">
-                                <TableHead className="w-[80px] font-mono text-xs uppercase tracking-wider">
+                                <TableHead className="w-20 font-mono text-xs uppercase tracking-wider">
                                     Avatar
                                 </TableHead>
                                 <TableHead className="font-mono text-xs uppercase tracking-wider">
@@ -253,12 +253,12 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
                                         </a>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <span className="inline-flex items-center justify-center min-w-[3rem] px-3 py-1 rounded-md bg-primary/10 border border-primary/20 font-mono text-sm font-semibold">
+                                        <span className="inline-flex items-center justify-center min-w-12 px-3 py-1 rounded-md bg-primary/10 border border-primary/20 font-mono text-sm font-semibold">
                                             {user.assignedCount}
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <span className="inline-flex items-center justify-center min-w-[3rem] px-3 py-1 rounded-md bg-green-500/10 border border-green-500/20 font-mono text-sm font-semibold">
+                                        <span className="inline-flex items-center justify-center min-w-12 px-3 py-1 rounded-md bg-green-500/10 border border-green-500/20 font-mono text-sm font-semibold">
                                             {user.approvedCount}
                                         </span>
                                     </TableCell>
@@ -324,7 +324,7 @@ export function HomeSkeleton() {
                         </TableCaption>
                         <TableHeader>
                             <TableRow className="border-border hover:bg-transparent">
-                                <TableHead className="w-[80px] font-mono text-xs uppercase tracking-wider">
+                                <TableHead className="w-20 font-mono text-xs uppercase tracking-wider">
                                     Avatar
                                 </TableHead>
                                 <TableHead className="font-mono text-xs uppercase tracking-wider">
