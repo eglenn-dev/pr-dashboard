@@ -18,6 +18,9 @@ const getPullRequestsQuery = gql`
                     hasNextPage
                 }
                 nodes {
+                    author {
+                        login
+                    }
                     reviewRequests(first: 20) {
                         nodes {
                             requestedReviewer {
@@ -222,6 +225,15 @@ export async function getAssignedPRCounts() {
 
     const assignedPRsCount = new Map<string, number>();
     const approvedPRsCount = new Map<string, number>();
+    const openPRsCount = new Map<string, number>();
+
+    // Count open PRs authored by each user
+    for (const pr of allPullRequests) {
+        if (pr.author) {
+            const login = pr.author.login;
+            openPRsCount.set(login, (openPRsCount.get(login) || 0) + 1);
+        }
+    }
 
     // Track users who have reviewed PRs in the last 30 days
     const activeReviewers = new Set<string>();
@@ -274,6 +286,7 @@ export async function getAssignedPRCounts() {
                 login,
                 assignedCount,
                 approvedCount: 0,
+                openPRCount: openPRsCount.get(login) || 0,
             })),
             approvalDays,
         };
@@ -337,6 +350,7 @@ export async function getAssignedPRCounts() {
             login,
             assignedCount,
             approvedCount: approvedPRsCount.get(login) || 0,
+            openPRCount: openPRsCount.get(login) || 0,
         })
     );
 

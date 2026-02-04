@@ -3,6 +3,7 @@ import { DashboardConfig } from "@/dashboard.config";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useMemo, useEffect } from "react";
+import { useQueryState, parseAsStringLiteral } from "nuqs";
 import {
     ExternalLink,
     HelpCircle,
@@ -29,13 +30,13 @@ import { ChadEasterEgg } from "@/components/easter-eggs/chad-easter-egg";
 import { EliEasterEgg } from "@/components/easter-eggs/eli-easter-egg";
 import { TuckerEasterEgg } from "@/components/easter-eggs/tucker-easter-egg";
 
-type SortField = "assigned" | "approved" | null;
-type SortDirection = "asc" | "desc";
+type SortField = "assigned" | "openPRs" | "approved" | null;
 
 interface UserData {
     login: string;
     assignedCount: number;
     approvedCount: number;
+    openPRCount: number;
 }
 
 interface HomeProps {
@@ -44,8 +45,14 @@ interface HomeProps {
 }
 
 export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
-    const [sortField, setSortField] = useState<SortField>(null);
-    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+    const [sortField, setSortField] = useQueryState(
+        "sort",
+        parseAsStringLiteral(["assigned", "openPRs", "approved"] as const),
+    );
+    const [sortDirection, setSortDirection] = useQueryState(
+        "dir",
+        parseAsStringLiteral(["asc", "desc"] as const).withDefault("desc"),
+    );
     const [isJ, setIsJ] = useState(false);
 
     const handleSort = (field: SortField) => {
@@ -75,6 +82,9 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
             if (sortField === "assigned") {
                 aValue = a.assignedCount;
                 bValue = b.assignedCount;
+            } else if (sortField === "openPRs") {
+                aValue = a.openPRCount;
+                bValue = b.openPRCount;
             } else if (sortField === "approved") {
                 aValue = a.approvedCount;
                 bValue = b.approvedCount;
@@ -118,7 +128,7 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
-            <div className="w-full max-w-3xl">
+            <div className="w-full max-w-4xl">
                 <div className="mb-8 text-center space-y-2">
                     <div className="flex justify-between items-center">
                         <div></div>
@@ -174,7 +184,33 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
                                         </Tooltip>
                                     </button>
                                 </TableHead>
-                                <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
+                                <TableHead className="w-32 text-right font-mono text-xs uppercase tracking-wider">
+                                    <button
+                                        onClick={() => handleSort("openPRs")}
+                                        className="flex items-center uppercase justify-end w-full hover:text-foreground transition-colors cursor-pointer"
+                                    >
+                                        Open
+                                        {getSortIcon("openPRs")}
+                                        <Tooltip>
+                                            <TooltipTrigger
+                                                asChild
+                                                className="inline-block ml-1"
+                                            >
+                                                <HelpCircle
+                                                    className="inline-block opacity-50"
+                                                    size={16}
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>
+                                                    Number of open pull requests
+                                                    authored by this user.
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </button>
+                                </TableHead>
+                                <TableHead className="w-44 text-right font-mono text-xs uppercase tracking-wider">
                                     <button
                                         onClick={() => handleSort("approved")}
                                         className="flex items-center uppercase justify-end w-full hover:text-foreground transition-colors cursor-pointer"
@@ -221,9 +257,9 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sortedData.map((user) => (
+                            {sortedData.map((user, index) => (
                                 <TableRow
-                                    key={user.login}
+                                    key={`${user.login}-${index}`}
                                     className="border-border hover:bg-muted/50 transition-colors"
                                 >
                                     <TableCell>
@@ -258,6 +294,11 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-right">
+                                        <span className="inline-flex items-center justify-center min-w-12 px-3 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 font-mono text-sm font-semibold">
+                                            {user.openPRCount}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-right">
                                         <span className="inline-flex items-center justify-center min-w-12 px-3 py-1 rounded-md bg-green-500/10 border border-green-500/20 font-mono text-sm font-semibold">
                                             {user.approvedCount}
                                         </span>
@@ -267,11 +308,11 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
                                             target="_blank"
                                             className="inline-flex items-center gap-1 hover:underline ml-auto"
                                             href={DashboardConfig.pullRequestBaseURL(
-                                                user.login
+                                                user.login,
                                             )}
                                             rel="noreferrer"
                                         >
-                                            View PRs
+                                            Assigned
                                             <ExternalLink
                                                 className="opacity-50"
                                                 size={12}
@@ -301,7 +342,7 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
 export function HomeSkeleton() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
-            <div className="w-full max-w-3xl">
+            <div className="w-full max-w-4xl">
                 <div className="mb-8 text-center space-y-2">
                     <div className="flex justify-between items-center">
                         <div></div>
@@ -355,6 +396,29 @@ export function HomeSkeleton() {
                                     </div>
                                 </TableHead>
                                 <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
+                                    <div className="flex items-center justify-end w-full">
+                                        Open
+                                        <ArrowUpDown
+                                            className="inline-block ml-1 opacity-30"
+                                            size={14}
+                                        />
+                                        <Tooltip>
+                                            <TooltipTrigger className="inline-block ml-1">
+                                                <HelpCircle
+                                                    className="inline-block opacity-50"
+                                                    size={16}
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>
+                                                    Number of open pull requests
+                                                    authored by this user.
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                </TableHead>
+                                <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
                                     <div className="flex items-center justify-end">
                                         Approved (7d)
                                         <ArrowUpDown
@@ -394,6 +458,9 @@ export function HomeSkeleton() {
                                     </TableCell>
                                     <TableCell className="font-medium">
                                         <Skeleton className="h-4 w-24" />
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Skeleton className="h-8 w-12 ml-auto" />
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Skeleton className="h-8 w-12 ml-auto" />

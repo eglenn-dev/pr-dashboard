@@ -7,6 +7,9 @@ export interface ReviewRequest {
 }
 
 export interface PullRequest {
+    author: {
+        login: string;
+    } | null;
     reviewRequests: {
         nodes: ReviewRequest[];
     };
@@ -65,6 +68,9 @@ export interface ReviewRequest {
 }
 
 export interface PullRequest {
+    author: {
+        login: string;
+    } | null;
     reviewRequests: {
         nodes: ReviewRequest[];
     };

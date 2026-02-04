@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DashboardConfig } from "@/dashboard.config";
+import { NuqsAdapter } from "nuqs/adapters/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,7 +37,9 @@ export default function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <TooltipProvider>{children}</TooltipProvider>
+                    <NuqsAdapter>
+                        <TooltipProvider>{children}</TooltipProvider>
+                    </NuqsAdapter>
                 </ThemeProvider>
             </body>
         </html>
