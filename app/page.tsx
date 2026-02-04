@@ -6,8 +6,16 @@ import { cacheLife } from "next/cache";
 async function HomeWithData() {
     "use cache";
     cacheLife("seconds");
-    const { data: assignedPRCounts, approvalDays } = await getAssignedPRCounts();
-    return <Home assignedPRCounts={assignedPRCounts} approvalDays={approvalDays} />;
+    const { data: assignedPRCounts, approvalDays } =
+        await getAssignedPRCounts();
+    const fetchedAt = Date.now();
+    return (
+        <Home
+            assignedPRCounts={assignedPRCounts}
+            approvalDays={approvalDays}
+            fetchedAt={fetchedAt}
+        />
+    );
 }
 
 export default async function HomePage() {

@@ -42,9 +42,14 @@ interface UserData {
 interface HomeProps {
     assignedPRCounts: UserData[];
     approvalDays: number;
+    fetchedAt: number;
 }
 
-export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
+export default function Home({
+    assignedPRCounts,
+    approvalDays,
+    fetchedAt,
+}: HomeProps) {
     const [sortField, setSortField] = useQueryState(
         "sort",
         parseAsStringLiteral(["assigned", "openPRs", "approved"] as const),
@@ -126,6 +131,24 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
         return () => window.removeEventListener("keydown", handleKeyPress);
     }, []);
 
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (
+                document.visibilityState === "visible" &&
+                Date.now() - fetchedAt > 2 * 60 * 60 * 1000
+            ) {
+                window.location.reload();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () =>
+            document.removeEventListener(
+                "visibilitychange",
+                handleVisibilityChange,
+            );
+    }, [fetchedAt]);
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <div className="w-full max-w-4xl">
@@ -147,7 +170,8 @@ export default function Home({ assignedPRCounts, approvalDays }: HomeProps) {
                 <div className="border border-border rounded-lg bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
                     <Table>
                         <TableCaption className="font-mono text-xs py-4">
-                            {">"} Active collaborators and PR assignments
+                            {">"} Updated:{" "}
+                            {new Date(fetchedAt).toLocaleString()}
                         </TableCaption>
                         <TableHeader>
                             <TableRow className="border-border hover:bg-transparent">
@@ -361,7 +385,7 @@ export function HomeSkeleton() {
                 <div className="border border-border rounded-lg bg-card/50 backdrop-blur-sm shadow-lg overflow-hidden">
                     <Table>
                         <TableCaption className="font-mono text-xs py-4">
-                            {">"} Active collaborators and PR assignments
+                            {">"} Updated: Loading...
                         </TableCaption>
                         <TableHeader>
                             <TableRow className="border-border hover:bg-transparent">
