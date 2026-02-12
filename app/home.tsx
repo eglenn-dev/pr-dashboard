@@ -26,9 +26,6 @@ import {
     TooltipTrigger,
     TooltipContent,
 } from "@/components/ui/tooltip";
-import { ChadEasterEgg } from "@/components/easter-eggs/chad-easter-egg";
-import { EliEasterEgg } from "@/components/easter-eggs/eli-easter-egg";
-import { TuckerEasterEgg } from "@/components/easter-eggs/tucker-easter-egg";
 
 type SortField = "assigned" | "openPRs" | "approved" | null;
 
@@ -356,9 +353,6 @@ export default function Home({
                     </p>
                 </div>
             </div>
-            <ChadEasterEgg />
-            <EliEasterEgg />
-            <TuckerEasterEgg />
         </div>
     );
 }
