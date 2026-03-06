@@ -27,13 +27,14 @@ import {
     TooltipContent,
 } from "@/components/ui/tooltip";
 
-type SortField = "assigned" | "openPRs" | "approved" | null;
+type SortField = "assigned" | "openPRs" | "approved" | "approvalRate" | null;
 
 interface UserData {
     login: string;
     assignedCount: number;
     approvedCount: number;
     openPRCount: number;
+    approvalRate: number | null;
 }
 
 interface HomeProps {
@@ -49,12 +50,14 @@ export default function Home({
 }: HomeProps) {
     const [sortField, setSortField] = useQueryState(
         "sort",
-        parseAsStringLiteral(["assigned", "openPRs", "approved"] as const),
+        parseAsStringLiteral(["assigned", "openPRs", "approved", "approvalRate"] as const),
     );
     const [sortDirection, setSortDirection] = useQueryState(
         "dir",
         parseAsStringLiteral(["asc", "desc"] as const).withDefault("desc"),
     );
+    const [showHidden] = useQueryState("showHidden");
+    const showApprovalRate = showHidden === "true";
     const [isJ, setIsJ] = useState(false);
 
     const handleSort = (field: SortField) => {
@@ -90,6 +93,9 @@ export default function Home({
             } else if (sortField === "approved") {
                 aValue = a.approvedCount;
                 bValue = b.approvedCount;
+            } else if (sortField === "approvalRate") {
+                aValue = a.approvalRate ?? -1;
+                bValue = b.approvalRate ?? -1;
             }
 
             if (sortDirection === "asc") {
@@ -258,6 +264,36 @@ export default function Home({
                                         </Tooltip>
                                     </button>
                                 </TableHead>
+                                {showApprovalRate && (
+                                <TableHead className="w-44 text-right font-mono text-xs uppercase tracking-wider">
+                                    <button
+                                        onClick={() => handleSort("approvalRate")}
+                                        className="flex items-center uppercase justify-end w-full hover:text-foreground transition-colors cursor-pointer"
+                                    >
+                                        Rate ({approvalDays}d)
+                                        {getSortIcon("approvalRate")}
+                                        <Tooltip>
+                                            <TooltipTrigger
+                                                asChild
+                                                className="inline-block ml-1"
+                                            >
+                                                <HelpCircle
+                                                    className="inline-block opacity-50"
+                                                    size={16}
+                                                />
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>
+                                                    Approval rate: approvals /
+                                                    (approvals + changes
+                                                    requested) in the last{" "}
+                                                    {approvalDays} days.
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </button>
+                                </TableHead>
+                                )}
                                 <TableHead className="text-right font-mono text-xs uppercase tracking-wider">
                                     View
                                     <Tooltip>
@@ -324,6 +360,15 @@ export default function Home({
                                             {user.approvedCount}
                                         </span>
                                     </TableCell>
+                                    {showApprovalRate && (
+                                    <TableCell className="text-right">
+                                        <span className="inline-flex items-center justify-center min-w-12 px-3 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 font-mono text-sm font-semibold">
+                                            {user.approvalRate === null
+                                                ? "-"
+                                                : `${user.approvalRate}%`}
+                                        </span>
+                                    </TableCell>
+                                    )}
                                     <TableCell className="text-right">
                                         <a
                                             target="_blank"

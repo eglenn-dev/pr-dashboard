@@ -287,6 +287,7 @@ export async function getAssignedPRCounts() {
                 assignedCount,
                 approvedCount: 0,
                 openPRCount: openPRsCount.get(login) || 0,
+                approvalRate: null as number | null,
             })),
             approvalDays,
         };
@@ -312,29 +313,45 @@ export async function getAssignedPRCounts() {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - approvalDays);
 
-    // Use a Map of Sets to track unique PRs approved by each user
+    // Use Maps of Sets to track unique PRs approved/changes-requested by each user
     const approvedPRsMap = new Map<string, Set<number>>();
+    const changesRequestedPRsMap = new Map<string, Set<number>>();
 
     for (const pr of reviewedPullRequests) {
         const prAuthor = pr.author?.login;
 
         for (const review of pr.reviews.nodes) {
-            if (review.state === "APPROVED" && review.author) {
+            if (
+                (review.state === "APPROVED" ||
+                    review.state === "CHANGES_REQUESTED") &&
+                review.author
+            ) {
                 const reviewDate = new Date(review.createdAt);
                 const reviewAuthor = review.author.login;
 
                 // Check if within time window
                 if (reviewDate >= cutoffDate) {
-                    // Check if self-approval
+                    // Check if self-review
                     if (reviewAuthor === prAuthor) {
                         continue;
                     }
 
-                    if (!approvedPRsMap.has(reviewAuthor)) {
-                        approvedPRsMap.set(reviewAuthor, new Set());
+                    if (review.state === "APPROVED") {
+                        if (!approvedPRsMap.has(reviewAuthor)) {
+                            approvedPRsMap.set(reviewAuthor, new Set());
+                        }
+                        approvedPRsMap.get(reviewAuthor)!.add(pr.number);
+                    } else {
+                        if (!changesRequestedPRsMap.has(reviewAuthor)) {
+                            changesRequestedPRsMap.set(
+                                reviewAuthor,
+                                new Set()
+                            );
+                        }
+                        changesRequestedPRsMap
+                            .get(reviewAuthor)!
+                            .add(pr.number);
                     }
-                    // Add the PR number to the set (automatically handles duplicates)
-                    approvedPRsMap.get(reviewAuthor)!.add(pr.number);
                 }
             }
         }
@@ -344,14 +361,29 @@ export async function getAssignedPRCounts() {
         approvedPRsCount.set(login, prSet.size);
     }
 
+    const changesRequestedPRsCount = new Map<string, number>();
+    for (const [login, prSet] of changesRequestedPRsMap.entries()) {
+        changesRequestedPRsCount.set(login, prSet.size);
+    }
+
     // Combine the data and sort by assigned count (descending)
     const combinedData = [...assignedPRsCount.entries()].map(
-        ([login, assignedCount]) => ({
-            login,
-            assignedCount,
-            approvedCount: approvedPRsCount.get(login) || 0,
-            openPRCount: openPRsCount.get(login) || 0,
-        })
+        ([login, assignedCount]) => {
+            const approved = approvedPRsCount.get(login) || 0;
+            const changesRequested =
+                changesRequestedPRsCount.get(login) || 0;
+            const total = approved + changesRequested;
+            return {
+                login,
+                assignedCount,
+                approvedCount: approved,
+                openPRCount: openPRsCount.get(login) || 0,
+                approvalRate:
+                    total > 0
+                        ? Math.round((approved / total) * 100)
+                        : null,
+            };
+        }
     );
 
     const sortedCounts = combinedData.sort(
