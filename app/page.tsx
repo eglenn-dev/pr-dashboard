@@ -6,9 +6,8 @@ import { cacheLife } from "next/cache";
 async function HomeWithData() {
     "use cache";
     cacheLife("seconds");
-    const { data: assignedPRCounts, approvalDays } =
+    const { data: assignedPRCounts, approvalDays, fetchedAt } =
         await getAssignedPRCounts();
-    const fetchedAt = Date.now();
     return (
         <Home
             assignedPRCounts={assignedPRCounts}

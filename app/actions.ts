@@ -223,6 +223,10 @@ export async function getAssignedPRCounts() {
         fetchReviewedPullRequests(client),
     ]);
 
+    // Timestamp of when this data was fetched. Captured here (server-side, at
+    // fetch time) so it stays accurate even when the caller is a cached render.
+    const fetchedAt = Date.now();
+
     const assignedPRsCount = new Map<string, number>();
     const approvedPRsCount = new Map<string, number>();
     const openPRsCount = new Map<string, number>();
@@ -290,6 +294,7 @@ export async function getAssignedPRCounts() {
                 approvalRate: null as number | null,
             })),
             approvalDays,
+            fetchedAt,
         };
     }
 
@@ -390,5 +395,5 @@ export async function getAssignedPRCounts() {
         (a, b) => b.assignedCount - a.assignedCount
     );
 
-    return { data: sortedCounts, approvalDays };
+    return { data: sortedCounts, approvalDays, fetchedAt };
 }
