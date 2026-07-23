@@ -41,12 +41,14 @@ interface HomeProps {
     assignedPRCounts: UserData[];
     approvalDays: number;
     fetchedAt: number;
+    chart?: React.ReactNode;
 }
 
 export default function Home({
     assignedPRCounts,
     approvalDays,
     fetchedAt,
+    chart,
 }: HomeProps) {
     const [sortField, setSortField] = useQueryState(
         "sort",
@@ -390,6 +392,8 @@ export default function Home({
                         </TableBody>
                     </Table>
                 </div>
+
+                {chart && <div className="mt-6">{chart}</div>}
 
                 <div className="mt-6 text-center">
                     <p className="text-xs text-muted-foreground font-mono">
