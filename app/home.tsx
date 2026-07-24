@@ -12,6 +12,7 @@ import {
     ArrowDown,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MergedPRChartSkeleton } from "@/components/merged-pr-chart";
 import {
     Table,
     TableBody,
@@ -41,12 +42,14 @@ interface HomeProps {
     assignedPRCounts: UserData[];
     approvalDays: number;
     fetchedAt: number;
+    chart?: React.ReactNode;
 }
 
 export default function Home({
     assignedPRCounts,
     approvalDays,
     fetchedAt,
+    chart,
 }: HomeProps) {
     const [sortField, setSortField] = useQueryState(
         "sort",
@@ -155,7 +158,7 @@ export default function Home({
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <div className="w-full max-w-4xl">
-                <div className="mb-8 text-center space-y-2">
+                <div className="mt-12 mb-8 text-center space-y-2">
                     <div className="flex justify-between items-center">
                         <div></div>
                         <div className="text-center">
@@ -391,6 +394,8 @@ export default function Home({
                     </Table>
                 </div>
 
+                {chart && <div className="mt-6">{chart}</div>}
+
                 <div className="mt-6 text-center">
                     <p className="text-xs text-muted-foreground font-mono">
                         {"["} {assignedPRCounts.length} collaborators tracked{" "}
@@ -406,7 +411,7 @@ export function HomeSkeleton() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <div className="w-full max-w-4xl">
-                <div className="mb-8 text-center space-y-2">
+                <div className="mt-12 mb-8 text-center space-y-2">
                     <div className="flex justify-between items-center">
                         <div></div>
                         <div className="text-center mt-4">
@@ -538,6 +543,10 @@ export function HomeSkeleton() {
                             ))}
                         </TableBody>
                     </Table>
+                </div>
+
+                <div className="mt-6">
+                    <MergedPRChartSkeleton />
                 </div>
 
                 <div className="mt-6 text-center">

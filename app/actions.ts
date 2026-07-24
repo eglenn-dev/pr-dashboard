@@ -201,6 +201,84 @@ async function fetchReviewedPullRequests(
     }
 }
 
+export interface MergedPRMonth {
+    /** Short month label, e.g. "Feb" */
+    label: string;
+    year: number;
+    count: number;
+    /** True for the current, still-in-progress month */
+    isPartial: boolean;
+}
+
+const MERGED_CHART_MONTHS = 7;
+
+/**
+ * Fetches the number of merged PRs per month for the last several months.
+ * Uses the GitHub search API's issueCount so each month is a single cheap
+ * count query (batched into one request via aliases) with no pagination.
+ */
+export async function getMergedPRCountsByMonth(): Promise<MergedPRMonth[]> {
+    if (!process.env.GITHUB_TOKEN) {
+        throw new Error(
+            "GitHub token is not set. Please set the GITHUB_TOKEN environment variable."
+        );
+    }
+
+    const client = new GraphQLClient(DashboardConfig.GITHUB_API_URL, {
+        headers: {
+            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+        },
+    });
+
+    const now = new Date();
+    const months: { start: string; end: string; label: string; year: number }[] =
+        [];
+
+    for (let i = MERGED_CHART_MONTHS - 1; i >= 0; i--) {
+        const first = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const last = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+        const toISODate = (d: Date) =>
+            `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+                2,
+                "0"
+            )}-${String(d.getDate()).padStart(2, "0")}`;
+        months.push({
+            start: toISODate(first),
+            end: toISODate(last),
+            label: first.toLocaleString("en-US", { month: "short" }),
+            year: first.getFullYear(),
+        });
+    }
+
+    const searchBase = `repo:${DashboardConfig.REPO_OWNER}/${DashboardConfig.REPO_NAME} is:pr is:merged`;
+    const query = gql`
+        query MergedPRCountsByMonth {
+            ${months
+                .map(
+                    (m, i) =>
+                        `m${i}: search(query: "${searchBase} merged:${m.start}..${m.end}", type: ISSUE) { issueCount }`
+                )
+                .join("\n")}
+        }
+    `;
+
+    try {
+        const data = await fetchWithRetry<Record<string, { issueCount: number }>>(
+            async () => client.request(query)
+        );
+
+        return months.map((m, i) => ({
+            label: m.label,
+            year: m.year,
+            count: data[`m${i}`]?.issueCount ?? 0,
+            isPartial: i === months.length - 1,
+        }));
+    } catch (error) {
+        console.error("Error fetching merged PR counts after retries:", error);
+        return [];
+    }
+}
+
 /**
  * Main function to orchestrate fetching, counting, and displaying the results.
  */
