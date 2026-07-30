@@ -22,12 +22,13 @@ async function HomeWithData({ chart }: { chart: React.ReactNode }) {
     );
 }
 
-// Merged-PR history changes slowly, so it gets a much longer cache life than
-// the table above it — the GitHub API is only re-queried in the background
-// once an hour instead of on every page load.
+// Revalidation only happens when a request actually reaches the server, and
+// this dashboard sees a handful of visits a day. Anything with an expiry
+// longer than the gap between visits never gets refreshed and pins the value
+// captured at build time, so keep this shorter than a typical visit interval.
 async function MergedPRChartWithData() {
     "use cache";
-    cacheLife("hours");
+    cacheLife("minutes");
     const months = await getMergedPRCountsByMonth();
     return <MergedPRChart months={months} />;
 }
