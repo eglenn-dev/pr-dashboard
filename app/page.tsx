@@ -10,8 +10,11 @@ import {
 async function HomeWithData({ chart }: { chart: React.ReactNode }) {
     "use cache";
     cacheLife("seconds");
-    const { data: assignedPRCounts, approvalDays, fetchedAt } =
-        await getAssignedPRCounts();
+    const {
+        data: assignedPRCounts,
+        approvalDays,
+        fetchedAt,
+    } = await getAssignedPRCounts();
     return (
         <Home
             assignedPRCounts={assignedPRCounts}
@@ -28,7 +31,7 @@ async function HomeWithData({ chart }: { chart: React.ReactNode }) {
 // captured at build time, so keep this shorter than a typical visit interval.
 async function MergedPRChartWithData() {
     "use cache";
-    cacheLife("minutes");
+    cacheLife("seconds");
     const months = await getMergedPRCountsByMonth();
     return <MergedPRChart months={months} />;
 }
