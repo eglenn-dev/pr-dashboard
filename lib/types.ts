@@ -25,6 +25,7 @@ export interface Review {
 
 export interface ReviewedPullRequest {
     number: number;
+    updatedAt: string;
     author: {
         login: string;
     } | null;

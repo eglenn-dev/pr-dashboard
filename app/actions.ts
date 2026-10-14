@@ -55,6 +55,7 @@ const getReviewedPullRequestsQuery = gql`
                 }
                 nodes {
                     number
+                    updatedAt
                     author {
                         login
                     }
@@ -166,39 +167,71 @@ async function fetchAllPullRequests(
     return allPullRequests;
 }
 
+// Reviews older than this don't affect the dashboard (see activeReviewers).
+const REVIEW_LOOKBACK_DAYS = 30;
+// Safety cap on pagination (100 PRs per page).
+const MAX_REVIEWED_PR_PAGES = 10;
+
 /**
- * Fetches the last 100 pull requests with reviews from the specified repository.
+ * Fetches every pull request updated within the review lookback window,
+ * ordered by most recently updated. Any review inside the window bumps the
+ * PR's updatedAt, so paging until we pass the cutoff captures all of them.
+ * A fixed page count is not enough: bulk events (e.g. deleting old head
+ * branches) bump updatedAt on many stale PRs and crowd out real activity.
  * @param client - The GraphQL client instance.
- * @returns A promise that resolves to an array of the last 100 pull requests.
+ * @returns A promise that resolves to the pull requests in the window.
  */
 async function fetchReviewedPullRequests(
     client: GraphQLClient
 ): Promise<ReviewedPullRequest[]> {
-    const variables = {
-        owner: DashboardConfig.REPO_OWNER,
-        name: DashboardConfig.REPO_NAME,
-        cursor: null,
-    };
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - REVIEW_LOOKBACK_DAYS);
 
-    try {
-        const data: ReviewedPRQueryResponse = await fetchWithRetry(async () => {
-            return await client.request(
-                getReviewedPullRequestsQuery,
-                variables
+    let allPullRequests: ReviewedPullRequest[] = [];
+    let cursor: string | null = null;
+
+    for (let page = 0; page < MAX_REVIEWED_PR_PAGES; page++) {
+        const variables = {
+            owner: DashboardConfig.REPO_OWNER,
+            name: DashboardConfig.REPO_NAME,
+            cursor,
+        };
+
+        try {
+            const data: ReviewedPRQueryResponse = await fetchWithRetry(
+                async () => {
+                    return await client.request(
+                        getReviewedPullRequestsQuery,
+                        variables
+                    );
+                }
             );
-        });
-        const { pullRequests } = data.repository;
+            const { pullRequests } = data.repository;
+            const nodes = pullRequests.nodes;
 
-        return pullRequests.nodes;
-    } catch (error) {
-        console.error(
-            "Error fetching reviewed pull requests after retries:",
-            error
-        );
-        // Return empty array to allow app to continue with partial data
-        // The retry logic has already attempted to recover from transient errors
-        return [];
+            allPullRequests = allPullRequests.concat(nodes);
+
+            const oldest = nodes[nodes.length - 1];
+            if (
+                !pullRequests.pageInfo.hasNextPage ||
+                !oldest ||
+                new Date(oldest.updatedAt) < cutoff
+            ) {
+                break;
+            }
+            cursor = pullRequests.pageInfo.endCursor;
+        } catch (error) {
+            console.error(
+                "Error fetching reviewed pull requests after retries:",
+                error
+            );
+            // Return partial results to allow app to continue
+            // The retry logic has already attempted to recover from transient errors
+            break;
+        }
     }
+
+    return allPullRequests;
 }
 
 export interface MergedPRMonth {
@@ -322,7 +355,7 @@ export async function getAssignedPRCounts() {
 
     // First pass: identify active reviewers from the last 30 days
     const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - REVIEW_LOOKBACK_DAYS);
 
     for (const pr of reviewedPullRequests) {
         for (const review of pr.reviews.nodes) {
