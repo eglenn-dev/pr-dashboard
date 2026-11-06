@@ -16,6 +16,7 @@ export const DashboardConfig = {
     EXCLUDED_REVIEWERS: [
         "copilot-pull-request-reviewer",
         "chatgpt-codex-connector",
+        "copilot-swe-agent",
         "t0-n1-lg",
     ],
 
