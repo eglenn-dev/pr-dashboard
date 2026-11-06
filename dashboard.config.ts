@@ -13,7 +13,11 @@ export const DashboardConfig = {
     REPO_NAME: "nomp",
 
     // List of reviewers to exclude from the dashboard
-    EXCLUDED_REVIEWERS: ["copilot-pull-request-reviewer", "chatgpt-codex-connector"],
+    EXCLUDED_REVIEWERS: [
+        "copilot-pull-request-reviewer",
+        "chatgpt-codex-connector",
+        "t0-n1-lg",
+    ],
 
     // Dashboard home page settings
     home: {
