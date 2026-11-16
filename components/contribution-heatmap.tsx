@@ -1,3 +1,6 @@
+"use client";
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import type { ContributionDay } from "@/app/actions";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -62,7 +65,15 @@ const monthLabel = new Intl.DateTimeFormat("en-US", {
     month: "short",
 });
 
+interface HoveredCell {
+    day: ContributionDay;
+    /** Viewport coordinates of the cell's top-center */
+    x: number;
+    y: number;
+}
+
 export function ContributionHeatmap({ days }: { days: ContributionDay[] }) {
+    const [hovered, setHovered] = useState<HoveredCell | null>(null);
 
     if (days.length === 0) {
         return (
@@ -101,12 +112,31 @@ export function ContributionHeatmap({ days }: { days: ContributionDay[] }) {
 
     return (
         <HeatmapCard>
-            <div className="overflow-x-auto">
+            <div
+                className="overflow-x-auto"
+                onScroll={() => setHovered(null)}
+            >
                 <svg
                     viewBox={`0 0 ${width} ${height}`}
                     className="w-full h-auto min-w-[600px]"
                     role="img"
                     aria-label="Merged pull requests per day over the last year"
+                    // One delegated handler instead of a listener per cell
+                    onPointerOver={(e) => {
+                        const index = (e.target as Element).getAttribute(
+                            "data-index"
+                        );
+                        if (index === null) return setHovered(null);
+                        const box = (
+                            e.target as Element
+                        ).getBoundingClientRect();
+                        setHovered({
+                            day: days[Number(index)],
+                            x: box.left + box.width / 2,
+                            y: box.top,
+                        });
+                    }}
+                    onPointerLeave={() => setHovered(null)}
                 >
                     {monthLabels.map((m) => (
                         <text
@@ -137,25 +167,24 @@ export function ContributionHeatmap({ days }: { days: ContributionDay[] }) {
                     {days.map((day, i) => {
                         const col = Math.floor(i / 7);
                         const row = i % 7;
-                        const merged = `${day.count.toLocaleString()} merged ${
-                            day.count === 1 ? "PR" : "PRs"
-                        }`;
                         return (
                             <rect
                                 key={day.date}
+                                data-index={i}
                                 x={PAD.left + col * STEP}
                                 y={PAD.top + row * STEP}
                                 width={CELL}
                                 height={CELL}
                                 rx={2}
-                                className={
+                                className={`${
                                     LEVEL_FILL[levelFor(day.count, thresholds)]
-                                }
-                            >
-                                <title>{`${merged} on ${tooltipDate.format(
-                                    parseDay(day.date)
-                                )}`}</title>
-                            </rect>
+                                } ${
+                                    hovered?.day.date === day.date
+                                        ? "stroke-foreground/60"
+                                        : ""
+                                }`}
+                                strokeWidth={1}
+                            />
                         );
                     })}
                 </svg>
@@ -163,7 +192,7 @@ export function ContributionHeatmap({ days }: { days: ContributionDay[] }) {
 
             <div className="flex flex-wrap items-center justify-between gap-2 pb-4 pt-2 px-2 text-xs text-muted-foreground font-mono">
                 <span>
-                    {">"} {total.toLocaleString()} PRs merged in the last year
+                    {">"} {total.toLocaleString("en-US")} PRs merged in the last year
                 </span>
                 <span className="flex items-center gap-1">
                     Less
@@ -176,7 +205,34 @@ export function ContributionHeatmap({ days }: { days: ContributionDay[] }) {
                     More
                 </span>
             </div>
+            {hovered && <DayTooltip cell={hovered} />}
         </HeatmapCard>
+    );
+}
+
+/**
+ * Portaled to <body> with fixed positioning: the card's overflow-hidden and
+ * backdrop-blur would otherwise clip it or become its containing block.
+ */
+function DayTooltip({ cell }: { cell: HoveredCell }) {
+    const { day, x, y } = cell;
+    return createPortal(
+        <div
+            role="tooltip"
+            className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-md bg-foreground px-3 py-1.5 text-xs text-background whitespace-nowrap shadow-md"
+            style={{ left: x, top: y - 8 }}
+        >
+            <span className="font-semibold">
+                {day.count === 0
+                    ? "No merged PRs"
+                    : `${day.count.toLocaleString("en-US")} merged ${
+                          day.count === 1 ? "PR" : "PRs"
+                      }`}
+            </span>{" "}
+            on {tooltipDate.format(parseDay(day.date))}
+            <span className="absolute left-1/2 top-full size-2.5 -translate-x-1/2 -translate-y-[calc(50%_+_1px)] rotate-45 rounded-[2px] bg-foreground" />
+        </div>,
+        document.body
     );
 }
 
