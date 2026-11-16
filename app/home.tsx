@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MergedPRChartSkeleton } from "@/components/merged-pr-chart";
+import { ContributionHeatmapSkeleton } from "@/components/contribution-heatmap";
 import {
     Table,
     TableBody,
@@ -545,8 +546,9 @@ export function HomeSkeleton() {
                     </Table>
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-6 space-y-6">
                     <MergedPRChartSkeleton />
+                    <ContributionHeatmapSkeleton />
                 </div>
 
                 <div className="mt-6 text-center">
