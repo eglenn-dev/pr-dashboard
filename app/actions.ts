@@ -312,6 +312,148 @@ export async function getMergedPRCountsByMonth(): Promise<MergedPRMonth[]> {
     }
 }
 
+export interface ContributionDay {
+    /** Calendar date in the team's time zone, YYYY-MM-DD */
+    date: string;
+    count: number;
+}
+
+// Same as GitHub profiles: 52 full weeks plus the current partial week.
+const HEATMAP_WEEKS = 53;
+// Safety cap on pagination (100 PRs per page).
+const MAX_HEATMAP_PR_PAGES = 40;
+// Days are bucketed in the team's time zone (see approval window logic).
+const HEATMAP_TIME_ZONE = "America/Denver";
+
+const getMergedPullRequestsQuery = gql`
+    query GetMergedPullRequests(
+        $owner: String!
+        $name: String!
+        $cursor: String
+    ) {
+        repository(owner: $owner, name: $name) {
+            pullRequests(
+                first: 100
+                after: $cursor
+                states: [MERGED]
+                orderBy: { field: UPDATED_AT, direction: DESC }
+            ) {
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                }
+                nodes {
+                    mergedAt
+                    updatedAt
+                }
+            }
+        }
+    }
+`;
+
+interface MergedPRQueryResponse {
+    repository: {
+        pullRequests: {
+            pageInfo: { endCursor: string | null; hasNextPage: boolean };
+            nodes: { mergedAt: string | null; updatedAt: string }[];
+        };
+    };
+}
+
+const toZonedISODate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: HEATMAP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+});
+
+/**
+ * Fetches the number of PRs merged per day over the last year, laid out like
+ * a GitHub profile contribution graph: contiguous days starting on a Sunday
+ * and ending today.
+ *
+ * Pages through merged PRs by most recently updated. Merging bumps updatedAt,
+ * so once a page's oldest PR was last updated before the window starts, every
+ * PR merged inside the window has been seen. (The search API would be cheaper
+ * but caps results at 1,000, which a year of merges can exceed.)
+ *
+ * Returns no days if any page fails, since a partial history would render as
+ * a misleadingly empty stretch of the graph.
+ */
+export async function getMergedPRCountsByDay(): Promise<ContributionDay[]> {
+    if (!process.env.GITHUB_TOKEN) {
+        throw new Error(
+            "GitHub token is not set. Please set the GITHUB_TOKEN environment variable."
+        );
+    }
+
+    const client = new GraphQLClient(DashboardConfig.GITHUB_API_URL, {
+        headers: {
+            Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+        },
+    });
+
+    // Work in whole calendar days (as UTC midnights) to sidestep DST.
+    const today = new Date(`${toZonedISODate.format(new Date())}T00:00:00Z`);
+    const start = new Date(today);
+    start.setUTCDate(
+        start.getUTCDate() - (HEATMAP_WEEKS - 1) * 7 - today.getUTCDay()
+    );
+
+    const counts = new Map<string, number>();
+    for (
+        const d = new Date(start);
+        d <= today;
+        d.setUTCDate(d.getUTCDate() + 1)
+    ) {
+        counts.set(d.toISOString().slice(0, 10), 0);
+    }
+
+    // A day early, so PRs merged early on the first local day aren't missed;
+    // anything outside the grid is dropped when bucketing.
+    const cutoff = new Date(start);
+    cutoff.setUTCDate(cutoff.getUTCDate() - 1);
+
+    let cursor: string | null = null;
+
+    try {
+        for (let page = 0; page < MAX_HEATMAP_PR_PAGES; page++) {
+            const data: MergedPRQueryResponse = await fetchWithRetry(
+                async () =>
+                    client.request(getMergedPullRequestsQuery, {
+                        owner: DashboardConfig.REPO_OWNER,
+                        name: DashboardConfig.REPO_NAME,
+                        cursor,
+                    })
+            );
+            const { pullRequests } = data.repository;
+            const nodes = pullRequests.nodes;
+
+            for (const pr of nodes) {
+                if (!pr.mergedAt) continue;
+                const day = toZonedISODate.format(new Date(pr.mergedAt));
+                const current = counts.get(day);
+                if (current !== undefined) counts.set(day, current + 1);
+            }
+
+            const oldest = nodes[nodes.length - 1];
+            if (
+                !pullRequests.pageInfo.hasNextPage ||
+                !oldest ||
+                new Date(oldest.updatedAt) < cutoff
+            ) {
+                break;
+            }
+            cursor = pullRequests.pageInfo.endCursor;
+        }
+    } catch (error) {
+        console.error("Error fetching merged PR history after retries:", error);
+        return [];
+    }
+
+    return [...counts.entries()].map(([date, count]) => ({ date, count }));
+}
+
 /**
  * Main function to orchestrate fetching, counting, and displaying the results.
  */

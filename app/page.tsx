@@ -1,11 +1,19 @@
 import { Suspense } from "react";
 import Home, { HomeSkeleton } from "./home";
-import { getAssignedPRCounts, getMergedPRCountsByMonth } from "./actions";
+import {
+    getAssignedPRCounts,
+    getMergedPRCountsByDay,
+    getMergedPRCountsByMonth,
+} from "./actions";
 import { cacheLife } from "next/cache";
 import {
     MergedPRChart,
     MergedPRChartSkeleton,
 } from "@/components/merged-pr-chart";
+import {
+    ContributionHeatmap,
+    ContributionHeatmapSkeleton,
+} from "@/components/contribution-heatmap";
 
 async function HomeWithData({ chart }: { chart: React.ReactNode }) {
     "use cache";
@@ -36,14 +44,26 @@ async function MergedPRChartWithData() {
     return <MergedPRChart months={months} />;
 }
 
+async function ContributionHeatmapWithData() {
+    "use cache";
+    cacheLife("seconds");
+    const days = await getMergedPRCountsByDay();
+    return <ContributionHeatmap days={days} />;
+}
+
 export default async function HomePage() {
     return (
         <Suspense fallback={<HomeSkeleton />}>
             <HomeWithData
                 chart={
-                    <Suspense fallback={<MergedPRChartSkeleton />}>
-                        <MergedPRChartWithData />
-                    </Suspense>
+                    <div className="space-y-6">
+                        <Suspense fallback={<MergedPRChartSkeleton />}>
+                            <MergedPRChartWithData />
+                        </Suspense>
+                        <Suspense fallback={<ContributionHeatmapSkeleton />}>
+                            <ContributionHeatmapWithData />
+                        </Suspense>
+                    </div>
                 }
             />
         </Suspense>
